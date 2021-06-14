@@ -1,0 +1,183 @@
+import speech_recognition as sr
+from gtts import gTTS
+import playsound
+import os
+import re
+import webbrowser
+import requests
+import pywhatkit as kit
+import datetime
+import pyautogui
+import speedtest
+import winsound
+import geocoder
+from urllib.request import urlopen
+import json
+
+def pvoice(String):  #programme voice fn. defenation
+    print(String)    #printing string on screen will tell also
+    obj = gTTS(text=String,lang="en",slow=False)   #converting text to speech file and storing to object file
+    obj.save("Speech.mp3")              #saving the object file to mp3 format
+    playsound.playsound("Speech.mp3")   #playing the mp3 file
+    os.remove("Speech.mp3")             #removing the file so that next time new words become saved
+
+def hear():
+    s = sr.Recognizer()          #created object s of recognizer method
+    with sr.Microphone() as mic: #using microphone as mic
+        print("I am Hearing...") #responding on screen (only text)
+        audio = s.listen(mic,phrase_time_limit = 10) #listning to mic for 10 sec,
+    data=""                      #empty string declearition
+    try:
+        data = s.recognize_google(audio,language='en-US') #converting intake audio with the help of sr module
+        print("You said:"+data)                           #showing on screen only text
+    except sr.UnknownValueError:
+        pvoice("Sorry Sir,I Wasn't Able To Hear You")        #unknown error occured
+    except sr.RequestError as k:
+        pvoice("Sorry SIR, I Am Unable To Fullfill Your Request As"+k)  #request error occored
+    return data
+
+def alarm(Timig): #alarm function defination
+    altime = str(datetime.datetime.now().strptime(Timig, "%I:%M %p"))
+    altime = altime[11:-3]
+    hr_real = altime[:2]
+    hr_real = int(hr_real)
+    mi_real = altime[3:5]
+    mi_real = int(mi_real)
+    pvoice(f"Done, alarm is set for {Timig}")
+
+    while True:
+        if hr_real == datetime.datetime.now().hour:
+            if mi_real == datetime.datetime.now().minute:
+                print("alarm is running")
+                winsound.PlaySound('abc', winsound.SND_LOOP)
+            elif mi_real < datetime.datetime.now().minute:
+                break
+
+def is_internet_available():
+    try:
+        urlopen('http://216.58.192.142', timeout=1)
+        return True
+    except:
+        return False
+
+def personal_assistant(data):
+    if re.search("open",data.casefold()): #opening any web page
+        hearing = True
+        data = data.split(' ')[-1]
+        url = "https://www."+data+".com"
+        webbrowser.open(url)
+        pvoice('Done')
+
+    if re.search("music|play|video",data.casefold()): #playing songs,music etc
+        hearing =True
+        kit.playonyt(data)
+        pvoice('Done')
+
+    if re.search("volume up|sound up|sound increase",data.casefold()):  #increasing decreasing and muting volume
+        hearing = True
+        pyautogui.press("volumeup")
+        pvoice('Done')
+    elif re.search("volume down|volume decrease|sound decrease",data.casefold()):
+        hearing = True
+        pyautogui.press("volumedown")
+        pvoice('Done')
+    elif re.search("mute|shut up",data.casefold()):
+        hearing = True
+        pyautogui.press("volumemute")
+
+    if re.search('weather|temperature',data.casefold()): #tells us about weather
+        hearing = True
+        city = data.split(' ')[-1]
+        api="https://api.openweathermap.org/data/2.5/weather?q="+city+"&appid=c5c5e14629dd1fc927a94bb504847bee"
+        json_data=requests.get(api).json()
+        temp=int(json_data['main']['temp']-273.15)
+        pvoice("It's "+f'{temp}'+" °Celcius Temperature in "+city)
+
+    if re.search("time and date",data.casefold()): #time and date
+        hearing = True
+        current = datetime.datetime.now()
+        date = (current.strftime("%D"))
+        pvoice(f"today's date is: {date}")
+        time = (current.strftime("%T"))
+        pvoice(f"and current time is: {time} sir")
+    elif re.search("date",data.casefold()):
+        hearing = True
+        current = datetime.datetime.now()
+        date = (current.strftime("%D"))
+        pvoice(f"today's date is: {date} sir")
+    elif re.search("time",data.casefold()):
+        hearing = True
+        current = datetime.datetime.now()
+        time = (current.strftime("%T"))
+        pvoice(f"current time is: {time} sir")
+
+    if re.search("alarm",data.casefold()): #setting an alarm
+        hearing = True
+        pvoice("For which time i should set the alarm,sir")
+        tt = hear()
+        tt = tt.replace("set alarm to ", "")
+        tt = tt.replace(".", "")
+        tt = tt.upper()
+        alarm(tt)
+
+    if re.search("location",data.casefold()): #current location
+        hearing = True
+        g = geocoder.ip('me')
+        real = g.latlng
+        pvoice(f"We are at {real[0]} lantitude and {real[1]} longitude")
+
+    if "word" in data.casefold(): #spell the word
+        hearing = True
+        data = data.split(' ')[-1]
+        pvoice(f"Spelling of the word {data} is:")
+        for x in data:
+            pvoice(f"{x}")
+
+    if re.search("internet speed",data.casefold()): #check internet speed
+        hearing = True
+        r = speedtest.Speedtest()
+        downlod = r.download()
+        uplod = r.upload()
+        pvoice(f"sir we have {downlod} bit per second downloading speed and {uplod} bit per second uploading speed")
+
+    if re.search("internet connection",data.casefold()): #check internet connectivity
+        hearing = True
+        if (is_internet_available()):
+            pvoice("yes sir, internet is connected")
+        else:
+            pvoice("No sir, internet is not available")
+
+    if re.search("what can you do|who are you|help",data.casefold()):  #tell me your skills
+        hearing = True
+        pvoice("Sir, I am your personal assistant. I am programmed to do some minor tasks like opening youtube,google chrome and social sites like facebook ,search predict weather in different cities , get top headline news from times of india and you can ask me computational or geographical questions too!")
+
+    if re.search("news",data.casefold()):
+        hearing = True
+        s = requests.get("https://newsapi.org/v2/top-headlines?country=in&apiKey=2d93bf550aec4aa78df47922f16a8cea")
+        raj = json.loads(s.content)
+        pvoice("Sir, According to times of india. First three news are:")
+        for i in range(3):
+            News = raj['articles'][i]['title']
+            pvoice(f'{News}')
+
+    if re.search("libreoffice|libre office",data.casefold()): #opening libreoffice suite
+        hearing = True
+        gpath = "C:\Program Files\LibreOffice\program\soffice.exe"
+        os.startfile(gpath)
+
+    if re.search("bye",data.casefold()): #terminating loop to assistance
+        hearing = False
+        pvoice("Bye SIR,Please Take Care Yourself!")
+
+    try:
+        return hearing
+    except UnboundLocalError:
+        pvoice("Please Re-Launch SIR")
+
+pvoice("Hello SIR,what can I do for you?")
+hearing = True
+while hearing == True:
+    data = hear() #calling to the hear from us through mic
+    hearing = personal_assistant(data) #calling to get response from our assistance
+    
+    
