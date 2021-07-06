@@ -1,6 +1,7 @@
 # Jarvis-Virtual-Assistance-
 This is a virtual assistance designed to made our daily work simple as setting alarm, chech internet connection ok or not etc etc...
-Libraries :-
+
+Libraries Used:-
 1. Gtts:-  Google Text-To Speech Recognisation Module Fetched From gtts API
 	TO INSTALL- pip install Gtts
 	USED TO- converting text to speech file and storing to object file
